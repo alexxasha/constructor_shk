@@ -39,7 +39,7 @@ const exMark=()=>{document.documentElement.dataset.ex=EX;document.querySelectorA
 $('#exs').onclick=e=>{const b=e.target.closest('button');if(!b||b.dataset.x===EX)return;
   if(dirty&&!sw){sw=true;$('#src').textContent='Есть несохранённые правки! Скачайте файл или нажмите ещё раз: переключение без сохранения.';setTimeout(()=>sw=false,5000);return}
   sw=false;EX=b.dataset.x;try{localStorage.setItem('exam',EX)}catch(e){}dirty=false;cur=0;q='';$('#q').value='';view='';exMark();load()};
-function nav(){$('#nav').innerHTML=D.sections.map((s,i)=>`<div class="nv ${i===cur&&!q&&view!=='img'?'on':''}"><button class="t" data-a="go" data-i="${i}">${esc(s.title)} <span class="mut">${s.items.filter(x=>x.group===undefined).length}</span></button><button class="btn" data-a="sup" data-i="${i}">▲</button><button class="btn" data-a="sdn" data-i="${i}">▼</button></div>`).join('')+'<button class="btn" data-a="ns" style="margin-top:8px">＋ Новый раздел</button><p class="mut" style="white-space:normal">Порядок разделов = порядок блоков в готовом плане.</p>'}
+function nav(){$('#nav').innerHTML=D.sections.map((s,i)=>`<div class="nv ${i===cur&&!q&&!view?'on':''}"><button class="t" data-a="go" data-i="${i}">${esc(s.title)} <span class="mut">${s.items.filter(x=>x.group===undefined).length}</span></button><button class="btn" data-a="sup" data-i="${i}">▲</button><button class="btn" data-a="sdn" data-i="${i}">▼</button></div>`).join('')+'<button class="btn" data-a="ns" style="margin-top:8px">＋ Новый раздел</button> <button class="btn" data-a="sch" style="margin-top:4px">📐 Схемы подготовки</button> <button class="btn" data-a="txt" style="margin-top:4px">✎ Тексты сообщений</button><p class="mut" style="white-space:normal">Порядок разделов = порядок блоков в готовом плане.</p>'}
 const fl=(a,f,l,v)=>`<label class="l">${l}</label><textarea ${a} data-f="${f}">${esc(v)}</textarea>`;
 function card(x,i){const s=D.sections[x],it=s.items[i],ex=s.kind==='exam',o=open.has(it.id),a=`data-x="${x}" data-i="${i}"`;
   let h=`<div class="card"><div class="r"><button class="btn" data-a="tg" ${a}>${o?'▾':'▸'}</button><input ${a} data-f="label" value="${esc(it.label)}" placeholder="Название">`
@@ -49,7 +49,7 @@ function card(x,i){const s=D.sections[x],it=s.items[i],ex=s.kind==='exam',o=open
   if(o)h+=ex?fl(a,'vAll','Всё включено: весь пробник',it.vAll)+(s.noEssay?'':fl(a,'cAll','Всё включено: сочинение из пробника',it.cAll))+fl(a,'vSelf','Самопроверка: пробник',it.vSelf):fl(a,'text','Текст шаблона',it.text);
   return h+'</div>'}
 function segs(it){const r=[];let s={h:-1,a:0,b:-1};it.forEach((x,i)=>{if(x.group!==undefined){r.push(s);s={h:i,a:i+1,b:i}}else s.b=i});r.push(s);return r.length>1&&r[0].b<0?r.slice(1):r}
-function ed(){let h='';
+function ed(){if(view==='sch'&&!q){schView();return}if(view==='txt'&&!q){txtView();return}let h='';
   if(q){const f=q.toLowerCase();D.sections.forEach((s,x)=>{const m=s.items.map((it,i)=>i).filter(i=>{const it=s.items[i];return it.group===undefined&&((it.label||'').toLowerCase().includes(f)||(it.text||it.vAll||'').toLowerCase().includes(f))});
     if(m.length)h+=`<h3>${esc(s.title)}</h3>`+m.reverse().map(i=>card(x,i)).join('')});$('#ed').innerHTML=h||'<p class="mut">Ничего не найдено</p>';return}
   const x=cur,s=D.sections[x],ex=s.kind==='exam',a=`data-x="${x}"`;
@@ -70,7 +70,7 @@ function blocksOf(it){const B=[];let c=null;it.forEach(x=>{if(x.group!==undefine
 const ensureHeader=it=>{if(it.length&&it[0].group===undefined)it.unshift({group:''})};   // пункты без названия получают пустую группу, чтобы их можно было двигать
 function moveGroup(it,h,d){const B=blocksOf(it),k=B.findIndex(b=>b[0]===h),j=k+d;if(k<0||j<0||j>=B.length)return;[B[k],B[j]]=[B[j],B[k]];it.length=0;B.forEach(b=>it.push(...b))}
 function mv(it,i,d){const j=i+d;if(j<0||j>=it.length)return;if(it[i].group!==undefined||it[j].group!==undefined&&it[i].group===undefined)return;[it[i],it[j]]=[it[j],it[i]];dirty=true}
-$('#nav').onclick=e=>{const b=e.target.closest('button');if(!b)return;const i=+b.dataset.i,a=b.dataset.a;q='';$('#q').value='';view=a==='im'?'img':'';
+$('#nav').onclick=e=>{const b=e.target.closest('button');if(!b)return;const i=+b.dataset.i,a=b.dataset.a;q='';$('#q').value='';view=a==='sch'?'sch':a==='txt'?'txt':'';
   if(a==='go')cur=i;else if(a==='sup'||a==='sdn'){const d=a==='sup'?-1:1,j=i+d;if(j>=0&&j<D.sections.length){[D.sections[i],D.sections[j]]=[D.sections[j],D.sections[i]];cur=cur===i?j:cur===j?i:cur;dirty=true}}
   else if(a==='ns'){const t='Новый раздел';D.sections.push({id:'s'+Date.now().toString(36),title:t,kind:'blocks',items:[],tab:t});cur=D.sections.length-1;dirty=true}draw()};
 $('#ed').onclick=e=>{const b=e.target.closest('button');if(!b)return;const a=b.dataset.a,x=+b.dataset.x,s=D.sections[x],i=+b.dataset.i;if(!s)return;const it=s.items;
@@ -86,9 +86,45 @@ $('#ed').oninput=e=>{const t=e.target,s=D.sections[+t.dataset.x],f=t.dataset.f;i
 $('#ed').onchange=e=>{const t=e.target;if(t.dataset.f!=='tab'||t.dataset.s===undefined)return;const old=t.dataset.old,nw=t.value.trim();if(!nw||nw===old)return;D.sections.forEach(z=>{if((z.tab||DEF[z.id])===old)z.tab=nw});dirty=true;draw()};
 $('#q').oninput=e=>{q=e.target.value.trim();view='';nav();ed()};
 const dl=n=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(D,null,1)],{type:'application/json'}));a.download=n;a.click();dirty=false};
-$('#dr').onclick=()=>dl(FILES()[0]);$('#pub').onclick=()=>dl(FILES()[1]);
+$('#dr').onclick=()=>view==='sch'||view==='txt'?dlS('schemes-draft.json'):dl(FILES()[0]);$('#pub').onclick=()=>view==='sch'||view==='txt'?dlS('schemes.json'):dl(FILES()[1]);
 const th=t=>{document.documentElement.dataset.theme=t;try{localStorage.setItem('theme',t)}catch(e){}};
 th((()=>{try{return localStorage.getItem('theme')}catch(e){}})()||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
 $('#th').onclick=()=>th(document.documentElement.dataset.theme==='dark'?'light':'dark');
+
+// ======== Схемы подготовки и тексты сообщений (файл schemes.json) ========
+let SC=null,scEdit=null;
+async function loadSC(){for(const f of['schemes-draft.json','schemes.json']){try{const r=await fetch(f+'?v='+Date.now());if(r.ok){SC=await r.json();break}}catch(e){}}if(!SC)SC={};SC.ege=SC.ege||[];SC.oge=SC.oge||[];SC.texts=SC.texts||{}}
+const dlS=n=>{if(!SC)return;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(SC,null,1)],{type:'application/json'}));a.download=n;a.click();dirty=false};
+const LOADS_=['3–4 часа','6–7 часов','8–9 часов','10–11 часов'];
+const TYPES_=[['test','Тестовый номер'],['essay','Занятие по сочинению'],['izl','Занятие по изложению (ОГЭ)'],['is','Занятие по ИС'],['mock:full','Пробник: полноценный'],['mock:test','Пробник: тестовая часть'],['mock:essay','Пробник: сочинение'],['self','Самостоятельная работа'],['quiz','Квиз']];
+const tv_=sl=>sl.t==='mock'?'mock:'+(sl.v||'full'):sl.t;
+function schView(){if(!SC){$('#ed').innerHTML='<p>Загрузка…</p>';return}const L=SC[EX];
+  let h=`<div class="card"><div class="r"><b style="flex:1">Схемы подготовки · ${EX==='oge'?'ОГЭ':'ЕГЭ'}</b><button class="btn main" data-a="sc_new">＋ Новая схема</button></div><p class="mut" style="white-space:normal">Это общие схемы: их видят все кураторы. Куратор может сделать личную копию и менять её, общая от этого не изменится. Правки сохраняются кнопками вверху: «Скачать черновик» даёт schemes-draft.json (виден в beta.html по ссылке с ?draft), «Скачать для публикации» даёт schemes.json. Файл нужно загрузить в ту же папку, что и index.html.</p></div>`;
+  h+=L.map((s,i)=>`<div class="card"><div class="r"><div style="flex:1"><b>${esc(s.name)}</b><div class="mut">${s.tariff==='all'?'Всё включено':'Самопроверка'} · ${esc(s.load)} · ${s.is?'с ИС':'без ИС'} · недель: ${s.weeks.length}</div></div><button class="btn" data-a="sc_edit" data-i="${i}">${scEdit===i?'Свернуть':'Редактировать'}</button><button class="btn" data-a="sc_dup" data-i="${i}">Копия</button><button class="btn" data-a="sc_del" data-i="${i}">✕</button></div>${scEdit===i?schEditor(s,i):''}</div>`).join('')||'<div class="card mut">Схем пока нет.</div>';
+  $('#ed').innerHTML=h}
+function schEditor(s,i){const a=`data-sc="${i}"`;
+  return `<div style="margin-top:8px"><label class="l">Название</label><input ${a} data-f="name" value="${esc(s.name)}"><div class="r" style="margin-top:6px"><select ${a} data-f="tariff"><option value="all" ${s.tariff==='all'?'selected':''}>Всё включено</option><option value="self" ${s.tariff==='self'?'selected':''}>Самопроверка</option></select><select ${a} data-f="load">${[...new Set([...LOADS_,s.load])].map(v=>`<option ${v===s.load?'selected':''}>${esc(v)}</option>`).join('')}</select><label class="mut" style="white-space:nowrap"><input type="checkbox" ${a} data-f="is" ${s.is?'checked':''}> с ИС</label></div>
+  <label class="l">Сообщение 1 · общая схема</label><textarea ${a} data-f="message1" style="min-height:150px">${esc(s.message1)}</textarea>
+  <div class="r" style="margin-top:8px"><b style="flex:1">Недели и занятия</b><button class="btn" data-a="sc_aw" data-i="${i}">＋ Неделя</button></div>
+  ${s.weeks.map((w,wi)=>`<div class="card" style="margin:6px 0"><div class="r"><b style="flex:1">Неделя ${wi+1}</b><button class="btn" data-a="sc_dw" data-i="${i}" data-w="${wi}">Удалить неделю</button></div>${w.map((sl,si)=>`<div class="r" style="margin-top:4px"><select ${a} data-f="slot" data-w="${wi}" data-s="${si}">${TYPES_.map(([v,l])=>`<option value="${v}" ${tv_(sl)===v?'selected':''}>${l}</option>`).join('')}</select><button class="btn" data-a="sc_dsl" data-i="${i}" data-w="${wi}" data-s="${si}">✕</button></div>`).join('')}<button class="btn" style="margin-top:6px" data-a="sc_asl" data-i="${i}" data-w="${wi}">＋ Занятие</button></div>`).join('')}</div>`}
+const DTX=[['hdr_upd','Заголовок распределения (обновление)','💙 Обновляю распределение:'],['hdr_new','Заголовок распределения (новый ученик)','💙 Предлагаю Вам следующее распределение занятий. Оно составлено на ближайшие три недели с упором на материалы курса:'],['sep','Разделитель (пустая строка)','⠀⠀'],['wk_done','Пройденная неделя ({n} — номер)','{n} неделя (+)'],['wk_cur','Текущая неделя','{n} неделя (текущая)'],['wk_next','Будущая неделя','{n} неделя'],['join','Между занятиями в неделе',' + '],['grade','Строка класса ({grade}, {year})','➡️ {grade} класс, {year}'],['load','Строка нагрузки ({load}, {is})','➡️ {load}{is}'],['is_yes','Добавка к нагрузке, если есть ИС',' + ИС'],['is_no','Добавка, если ИС нет (можно пусто)',''],['sum_head','Заголовок сводки','✔️ Сводка по изученному материалу'],['sum_t','Заголовок: изученные номера','🔶 Изученные номера:'],['sum_e','Заголовок: просмотренные занятия','🔶 Просмотренные занятия:'],['sum_m','Заголовок: решённые пробники','🔶 Решённые пробники:'],['sum_i','Заголовок: ИС','🔶 ИС:'],['c_gk','Годовой курс','Годовой курс'],['c_lk','Летний курс','Летний курс'],['c_bk','Бонусный курс','Бонусный курс'],['dash','Пусто (если ничего нет)','–'],['sfx_lk','Пометка летнего курса у номера',' (ЛК)'],['sfx_bk','Пометка бонусного курса у номера',' (БК)'],['sfx_dz','Пометка комплексного ДЗ (для нагрузки до 4 часов)',' (компл. ДЗ)'],['sl_test','Слот: тестовый номер','тестовый номер'],['sl_essay','Слот: занятие по сочинению','занятие по сочинению'],['sl_izl','Слот: занятие по изложению','занятие по изложению'],['sl_self','Слот: самостоятельная работа','самостоятельная работа'],['sl_is','Слот: занятие по ИС','занятие по ИС'],['sl_quiz','Слот: квиз','квиз'],['sl_mock_full','Слот: полноценный пробник','полноценный пробник'],['sl_mock_essay','Слот: сочинение из пробника','сочинение из пробника'],['sl_mock_test','Слот: тестовая часть пробника','тестовая часть пробника']];
+function txtView(){if(!SC){$('#ed').innerHTML='<p>Загрузка…</p>';return}
+  $('#ed').innerHTML=`<div class="card"><b>Тексты сообщений «Планов»</b><p class="mut" style="white-space:normal">Все надписи, из которых собирается сообщение 2 (распределение и сводка). Пустое поле значит «стандартный текст». Переменные в фигурных скобках ({n}, {grade}, {year}, {load}, {is}) подставляются сами. Сохранение: «Скачать для публикации» (schemes.json).</p></div><div class="card">`+DTX.map(([k,l,d])=>`<label class="l">${esc(l)}</label><input data-tx="${k}" value="${esc(SC.texts[k]!=null?SC.texts[k]:'')}" placeholder="${esc(d)}">`).join('')+'</div>'}
+$('#ed').addEventListener('click',e=>{const b=e.target.closest('[data-a^="sc_"]');if(!b||!SC)return;const a=b.dataset.a,i=+b.dataset.i,L=SC[EX];
+  if(a==='sc_new'){L.unshift({id:'s'+Date.now().toString(36),name:'Новая схема',tariff:'all',load:'3–4 часа',is:false,message1:'',weeks:[]});scEdit=0}
+  else if(a==='sc_edit')scEdit=scEdit===i?null:i;
+  else if(a==='sc_dup'){const c=JSON.parse(JSON.stringify(L[i]));c.id='s'+Date.now().toString(36);c.name+=' (копия)';L.splice(i+1,0,c);scEdit=i+1}
+  else if(a==='sc_del'){const k='d'+i;if(b.dataset.arm!==k){b.dataset.arm=k;b.textContent='Точно?';b.style.color='#d2584a';setTimeout(()=>{b.textContent='✕';b.style.color='';delete b.dataset.arm},3000);return}L.splice(i,1);scEdit=null}
+  else if(a==='sc_aw')L[i].weeks.push([]);
+  else if(a==='sc_dw')L[i].weeks.splice(+b.dataset.w,1);
+  else if(a==='sc_asl')L[i].weeks[+b.dataset.w].push({t:'test'});
+  else if(a==='sc_dsl')L[i].weeks[+b.dataset.w].splice(+b.dataset.s,1);
+  dirty=true;schView()});
+$('#ed').addEventListener('input',e=>{const t=e.target;if(!SC)return;
+  if(t.dataset.tx){const v=t.value;v===''?delete SC.texts[t.dataset.tx]:SC.texts[t.dataset.tx]=v;dirty=true;return}
+  if(t.dataset.sc!==undefined&&(t.dataset.f==='name'||t.dataset.f==='message1')){SC[EX][+t.dataset.sc][t.dataset.f]=t.value;dirty=true}});
+$('#ed').addEventListener('change',e=>{const t=e.target;if(!SC||t.dataset.sc===undefined)return;const s=SC[EX][+t.dataset.sc],f=t.dataset.f;
+  if(f==='slot'){const[tt,v]=t.value.split(':');s.weeks[+t.dataset.w][+t.dataset.s]=tt==='mock'?{t:'mock',v}:{t:tt}}else if(f==='is')s.is=t.checked;else if(f==='tariff'||f==='load')s[f]=t.value;else return;dirty=true;schView()});
+loadSC();
 onbeforeunload=e=>{if(dirty){e.preventDefault();e.returnValue=''}};exMark();load();
 </script></body></html>
