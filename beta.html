@@ -58,12 +58,13 @@ const weekStart=now=>{const p=mskParts(now);return new Date(p.year,p.month-1,p.d
 const mskToday=()=>{const p=mskParts();return p.year+'-'+String(p.month).padStart(2,'0')+'-'+String(p.day).padStart(2,'0')};
 function header(start){const e=new Date(start.getTime()+6*864e5);return 'Ваш план на неделю '+fmtDate(start)+' — '+fmtDate(e)+'\n'+FILL+'\n';}
 const closedEP=i=>!!(i.closed||/[✖✕×]/.test(i.ep||''));
+const nl=t=>t&&!t.endsWith('\n')?t+'\n':t;   // если в конце текста забыли перевод строки, он добавляется сам (иначе следующий блок приклеивается к ссылке)
 function examTexts(s,st){const a=[],b=[],all=st.tariff==='all';
-  if(!all)(s.selfwork||[]).forEach(w=>{if(st.sel[w.id]&&w.text)a.push(w.text);});
+  if(!all)(s.selfwork||[]).forEach(w=>{if(st.sel[w.id]&&w.text)a.push(nl(w.text));});
   for(const i of s.items){
     if(i.group!==undefined)continue;
-    if(st.sel[i.id]){const t=all?i.vAll:i.vSelf;if(t)b.push(t);}
-    if(all&&!closedEP(i)&&st.sel[i.id+'c']&&i.cAll)a.push(i.cAll);
+    if(st.sel[i.id]){const t=all?i.vAll:i.vSelf;if(t)b.push(nl(t));}
+    if(all&&!closedEP(i)&&st.sel[i.id+'c']&&i.cAll)a.push(nl(i.cAll));
   }
   return [...a,...b];}
 function assemble(D,st){
@@ -73,9 +74,9 @@ function assemble(D,st){
     if(s.kind==='exam'){out.push(...examTexts(s,st));continue;}
     const it=s.items.filter(i=>st.sel[i.id]);
     if(!it.length)continue;
-    if(s.intro1!==undefined)out.push(it.length>1?s.introN:s.intro1);
-    it.forEach(i=>{if(i.text)out.push(i.text);});
-    if(s.outro)out.push(s.outro);
+    if(s.intro1!==undefined)out.push(nl(it.length>1?s.introN:s.intro1));
+    it.forEach(i=>{if(i.text)out.push(nl(i.text));});
+    if(s.outro)out.push(nl(s.outro));
   }
   return out.join('').split(st.e1?'💙':'💙 ').join(st.e1).split(st.e2?'💜':'💜 ').join(st.e2);
 }
